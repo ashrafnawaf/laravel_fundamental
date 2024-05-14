@@ -2,37 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProductCreateRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function showForm($user_id)
+    public function create($user_id)
     {
-        return view('admin.create', [
+        return view('admin.products.create', [
             'user_id' => $user_id
         ]);
     }
-    public function create(Request $request)
+    public function store(ProductCreateRequest $request)
     {
-        if (!$request->filled('gambar')) {
-            return redirect()->back()->with('error', 'Error. Field Gambar Produk Wajib diisi.');
-        } else if (!$request->filled('nama')) {
-            return redirect()->back()->with('error', 'Error. Field Nama Produk Wajib diisi.');
-        } else if (!$request->filled('berat')) {
-            return redirect()->back()->with('error', 'Error. Field Berat Wajib diisi.');
-        } else if (!$request->filled('harga')) {
-            return redirect()->back()->with('error', 'Error. Field Harga Wajib diisi.');
-        } else if (!$request->filled('stok')) {
-            return redirect()->back()->with('error', 'Error. Field Stok Wajib diisi.');
-        } else if ($request->kondisi == 0) {
-            return redirect()->back()->with('error', 'Error. Field Kondisi Wajib diisi.');
-        } else if (!$request->filled('deskripsi')) {
-            return redirect()->back()->with('error', 'Error. Field Deskripsi Wajib diisi.');
-        }
-        Product::create([
-            'gambar' => $request->gambar,
+        $imagePath = $request->file('gambar')->store('product', 'public');
+        $gambarUrl = Storage::url($imagePath);
+        
+        // Membuat produk
+        $productData = [
+            'gambar' => $gambarUrl,
             'nama' => $request->nama,
             'berat' => $request->berat,
             'harga' => $request->harga,
@@ -40,60 +32,43 @@ class ProductController extends Controller
             'kondisi' => $request->kondisi,
             'deskripsi' => $request->deskripsi,
             'user_id' => $request->user_id
-        ]);
+        ];
+        
+        Product::create($productData);
 
-        return redirect()->route('list-product', ['user_id' => $request->user_id]);
+        return redirect()->route('list-product', ['user_id' => $request->user_id])->with('success', 'Data Produk Berhasil dibuat.');
     }
 
     public function showUpdate($user_id, $id)
     {
         $product = Product::find($id);
         
-        return view('admin.update', [
+        return view('admin.products.edit', [
             'user_id' => $user_id,
             'product' => $product
         ]);
     }
 
-    public function update(Request $request, $user_id, Product $product)
+    public function update(ProductCreateRequest $request, $user_id, Product $product)
     {
-        
-        if (!$request->filled('gambar')) {
-            return redirect()->back()->with('error', 'Error. Field Gambar Produk Wajib diisi.');
-        } else if (!$request->filled('nama')) {
-            return redirect()->back()->with('error', 'Error. Field Nama Produk Wajib diisi.');
-        } else if (!$request->filled('berat')) {
-            return redirect()->back()->with('error', 'Error. Field Berat Wajib diisi.');
-        } else if (!$request->filled('harga')) {
-            return redirect()->back()->with('error', 'Error. Field Harga Wajib diisi.');
-        } else if (!$request->filled('stok')) {
-            return redirect()->back()->with('error', 'Error. Field Stok Wajib diisi.');
-        } else if ($request->kondisi == 0) {
-            return redirect()->back()->with('error', 'Error. Field Kondisi Wajib diisi.');
-        } else if (!$request->filled('deskripsi')) {
-            return redirect()->back()->with('error', 'Error. Field Deskripsi Wajib diisi.');
+        $data = $request->only(['gambar', 'nama', 'berat', 'harga', 'stok', 'kondisi', 'deskripsi', 'user_id']);
+        if ($request->hasFile('gambar')) {
+            $imagePath = $request->file('gambar')->store('product', 'public');
+            $data['gambar'] = Storage::url($imagePath);
         }
-        
-        $product->gambar = $request->gambar;
-        $product->nama = $request->nama;
-        $product->berat = $request->berat;
-        $product->harga = $request->harga;
-        $product->stok = $request->stok;
-        $product->kondisi = $request->kondisi;
-        $product->deskripsi = $request->deskripsi;
-        
-        $product->save();
-        
+        $product->update($data);
         return redirect()->route('list-product', ['user_id' => $user_id])
-           ->with('success', 'Data Produk Berhasil diubah.');
+        ->with('success', 'Data Produk Berhasil diubah.');
     }
 
     public function delete($user_id, $id)
     {
         $product = Product::find($id);
+
+        Storage::delete('public/'.$product->gambar);
+
         $product->delete();
-        
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Data Produk berhasil dihapus.');
     }
 
     public function showProducts(Request $request){
@@ -105,6 +80,6 @@ class ProductController extends Controller
     public function showListProducts(Request $request, $user_id){
         $product = Product::where('user_id', $user_id)->get();
         
-        return view('admin.list', compact('product', 'user_id'));
+        return view('admin.products.index', compact('product', 'user_id'));
     }
 }

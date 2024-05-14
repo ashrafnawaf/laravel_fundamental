@@ -1,10 +1,10 @@
 @extends('layouts.master')
+@section('title', 'Product')
+
 @section('content')
     <section class="list-product px-5">
         <div class="container-fluid bg-info" style="margin:50px 0 50px 0; padding: 20px; border-radius:10px;">
-            <a href="{{ route('list-product', ['user_id' => 1]) }}" class="btn btn-primary" style="position: absolute;"><b>Halaman Pengguna Admin</b></a>
             <h2 style="text-align: center; margin-bottom:10px; font-weight:700;">PRODUCTS</h2>
-            <a href="{{ route('list-product', ['user_id' => 2]) }}" class="btn btn-success" style="position: absolute; right:70px; top:70px;"><b>Halaman Pengguna Merchant</b></a>
             <div class="underline d-flex justify-content-center">
                 <div class="border-dark" style="margin-bottom: 20px; border-bottom: 3.5px solid; border-radius:10px; width: 6%"></div>
             </div>
@@ -13,7 +13,11 @@
                 @foreach ($product as $item)
                     <div class="col-md-3">
                         <div class="card mb-4" style="border-radius: 10px">
-                            <img src="{{ $item->gambar }}" class="card-img-top" alt="{{ $item->nama }}" style="height: 300px">
+                            @if ($item->gambar)
+                                <img src="{{ asset($item->gambar) }}" class="card-img-top" alt="{{ $item->nama }}" style="height: 300px">
+                            @else
+                                <p>No Image</p>
+                            @endif
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col">
